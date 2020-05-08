@@ -1,0 +1,126 @@
+.tree {
+  font-size: 13px;
+  color: #333;
+  background-size: 100% 100px;
+  user-select: none;
+
+  li {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    text-align: left;
+    white-space: nowrap;
+    outline: 0;
+
+    i {
+      line-height: 0;
+      margin: 0;
+      padding: 0;
+      width: 12px;
+      height: 24px;
+      display: inline-block;
+      vertical-align: middle;
+      border: 0 none;
+      outline: none;
+      cursor: pointer;
+      background: transparent url("./tree.png") no-repeat scroll;
+    }
+
+    & > a {
+      padding: 0 5px;
+      margin: 0;
+      cursor: pointer;
+      height: 24px;
+      line-height: 24px;
+      color: #333;
+      background-color: transparent;
+      text-decoration: none;
+      vertical-align: middle;
+      display: inline-block;
+      border-radius: 5px;
+      transition: background-color 0.3s;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 18px;
+      overflow: hidden;
+
+      li {
+        ul {
+          background: url("./line_conn.png") -4px 0 repeat-y;
+        }
+
+        &:last-child {
+          & > ul {
+            background: none;
+          }
+        }
+      }
+    }
+
+    &.file {
+      & > a {
+        &:hover {
+          background-color: #e7f4f9;
+        }
+
+        &.active {
+          background-color: #beebff;
+        }
+      }
+
+      & > i {
+        background-position: -5px -64px;
+      }
+
+      &:last-child {
+        & > i {
+          background-position: -5px -115px;
+        }
+      }
+    }
+
+    &.fold {
+      &.open {
+        & > i {
+          background-position: -40px -64px;
+        }
+
+        &.root {
+          & > i {
+            background-position: -40px -166px !important;
+          }
+        }
+
+        &:last-child {
+          & > i {
+            background-position: -40px -115px;
+          }
+        }
+      }
+
+      &.close {
+        & > ul {
+          height: 0;
+        }
+
+        & > i {
+          background-position: -66px -64px;
+        }
+
+        .root {
+          & > i {
+            background-position: -66px -166px !important;
+          }
+        }
+
+        &:last-child {
+          & > i {
+            background-position: -66px -115px;
+          }
+        }
+      }
+    }
+  }
+}

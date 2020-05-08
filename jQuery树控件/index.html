@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>树状图生成器</title>
+  <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+  <script src="./jquery.tree.js"></script>
+  <link rel="stylesheet" href="./jquery.tree.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    #tree-panel {
+      margin: 50px;
+      background-color: #fff;
+    }
+  </style>
+</head>
+
+<body>
+<div class="container">
+  <div id="tree-panel">
+  </div>
+</div>
+<textarea id="md" cols="50" rows="30"></textarea>
+<script>
+  $.getJSON('./tree.json', function (json) {
+    var $tree = $('#tree-panel').tree(json)
+    document.querySelector('#md').value = $tree.getMDStr()
+  })
+
+</script>
+</body>
+</html>

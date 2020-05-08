@@ -1,0 +1,67 @@
+.tree {
+  font-size: 13px;
+  color: #333;
+  background-size: 100% 100px;
+  user-select: none; }
+  .tree li {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    text-align: left;
+    white-space: nowrap;
+    outline: 0; }
+    .tree li i {
+      line-height: 0;
+      margin: 0;
+      padding: 0;
+      width: 12px;
+      height: 24px;
+      display: inline-block;
+      vertical-align: middle;
+      border: 0 none;
+      outline: none;
+      cursor: pointer;
+      background: transparent url("./tree.png") no-repeat scroll; }
+    .tree li > a {
+      padding: 0 5px;
+      margin: 0;
+      cursor: pointer;
+      height: 24px;
+      line-height: 24px;
+      color: #333;
+      background-color: transparent;
+      text-decoration: none;
+      vertical-align: middle;
+      display: inline-block;
+      border-radius: 5px;
+      transition: background-color 0.3s; }
+    .tree li ul {
+      margin: 0;
+      padding-left: 18px;
+      overflow: hidden; }
+      .tree li ul li ul {
+        background: url("./line_conn.png") -4px 0 repeat-y; }
+      .tree li ul li:last-child > ul {
+        background: none; }
+    .tree li.file > a:hover {
+      background-color: #e7f4f9; }
+    .tree li.file > a.active {
+      background-color: #beebff; }
+    .tree li.file > i {
+      background-position: -5px -64px; }
+    .tree li.file:last-child > i {
+      background-position: -5px -115px; }
+    .tree li.fold.open > i {
+      background-position: -40px -64px; }
+    .tree li.fold.open.root > i {
+      background-position: -40px -166px !important; }
+    .tree li.fold.open:last-child > i {
+      background-position: -40px -115px; }
+    .tree li.fold.close > ul {
+      height: 0; }
+    .tree li.fold.close > i {
+      background-position: -66px -64px; }
+    .tree li.fold.close .root > i {
+      background-position: -66px -166px !important; }
+    .tree li.fold.close:last-child > i {
+      background-position: -66px -115px; }
