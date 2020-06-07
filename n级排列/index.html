@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>线性代数-n级排列</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            padding: 50px;
+        }
+
+        textarea {
+            width: 500px;
+            height: 300px;
+            display: block;
+            padding: 10px;
+            border: 1px solid #aaa;
+            font-size: 18px;
+            line-height: 22px;
+            font-family: verdana, cursive, sans-serif;
+            letter-spacing: 2px;
+            outline: none;
+        }
+
+        #trigger {
+            padding: 5px 8px;
+            border: 1px solid #7bd87e;
+            background-color: #c5f5c7;
+            margin-top: 20px;
+            cursor: pointer;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        #trigger[disabled] {
+            background-color: #cfffd1;
+            cursor: not-allowed;
+        }
+
+        #trigger:hover {
+            background-color: #cfffd1;
+        }
+
+        #trigger:active {
+            background-color: #9cdb9f;
+        }
+
+        #formula {
+            display: inline-block;
+        }
+
+        #output {
+            display: inline-block;
+        }
+
+    </style>
+    <script>
+      window.MathJax = {
+        options: {
+          skipHtmlTags: [ //  HTML tags that won't be searched for math
+            'body'
+          ],
+        },
+        startup: {
+          ready: () => {
+            console.log('MathJax is loaded, but not yet initialized')
+            MathJax.startup.defaultReady()
+            console.log('MathJax is initialized, and the initial typeset is queued')
+            document.getElementById('trigger').disabled = false
+          }
+        }
+      }
+    </script>
+</head>
+<body>
+<textarea id="input" placeholder="请输入一串逗号分隔的数字">4,3,2,1</textarea>
+<div>
+    <button id="trigger" disabled>判断奇偶排列</button>
+</div>
+<div class="wrap">
+    <div id="formula"></div>
+    <div id="output"></div>
+</div>
+
+<script>
+  (function () {
+    const script = document.createElement('script')
+    script.src = 'https://cdn.bootcdn.net/ajax/libs/mathjax/3.0.5/es5/tex-mml-chtml.js'
+    script.async = true
+    document.head.appendChild(script)
+
+    // 排列
+    class Permutation {
+      constructor (numList) {
+        this._init(numList)
+      }
+      _init (numList) {
+        numList = numList || []
+        let i, j
+        let inversionSet = [] // 逆序数对
+        for (i = 0; i < numList.length; i++) {
+          for (j = i + 1; j < numList.length; j++) {
+            if (numList[i] > numList[j]) {
+              inversionSet.push([numList[i], numList[j]])
+            }
+          }
+        }
+        this.inversionSet = inversionSet
+        // 逆序数
+        this.inversionNum = inversionSet.length
+      }
+
+      reset (numList) {
+        this._init(numList)
+      }
+    }
+
+    const triggerEle = document.getElementById('trigger')
+    const inputEle = document.getElementById('input')
+    const outputEle = document.getElementById('output')
+    const formulaEle = document.getElementById('formula')
+
+    // 渲染数学公式
+    async function renderFormula (inputStr, onRender, onError) {
+      MathJax.texReset()
+      const options = MathJax.getMetricsFor(formulaEle)
+      // options.display = true
+      try {
+        const node = await MathJax.tex2chtmlPromise(inputStr, options)
+        formulaEle.appendChild(node)
+        MathJax.startup.document.clear()
+        MathJax.startup.document.updateDocument()
+        onRender && onRender()
+      } catch (e) {
+        formulaEle.appendChild(document.createElement('pre')).appendChild(document.createTextNode(e.message))
+        onError && onError()
+      }
+    }
+
+    const permutation = new Permutation()
+    // 判断奇偶排列
+    triggerEle.onclick = function () {
+      const numList = []
+      const inputStr = inputEle.value.trim()
+      inputStr.split(',').forEach(v => v && numList.push(Number(v.trim())))
+      permutation.reset(numList)
+      const resultHtml = ['的逆序数是：' + permutation.inversionNum]
+      permutation.inversionNum && resultHtml.push('，分别为：' + permutation.inversionSet.join('&nbsp;&nbsp;'))
+      resultHtml.push('，是' + (permutation.inversionNum % 2 === 0 ? '偶' : '奇') + '排列')
+      triggerEle.disabled = true
+      formulaEle.innerHTML = ''
+      renderFormula(
+        `\\tau(${numList})`,
+        function () {
+          outputEle.innerHTML = resultHtml.join('')
+          triggerEle.disabled = false
+        },
+        function () {
+          triggerEle.disabled = false
+        })
+    }
+  })()
+</script>
+</body>
+</html>
