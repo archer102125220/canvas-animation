@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>线性代数-行列式</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            padding: 50px;
+        }
+        textarea {
+            width: 500px;
+            height: 300px;
+            display: block;
+            padding: 10px;
+            border: 1px solid #aaa;
+            font-size: 18px;
+            line-height: 22px;
+            font-family: verdana, cursive, sans-serif;
+            letter-spacing: 2px;
+            outline: none;
+        }
+        .trigger {
+            padding: 5px 8px;
+            border: 1px solid #7bd87e;
+            background-color: #c5f5c7;
+            cursor: pointer;
+            border-radius: 4px;
+            outline: none;
+            margin-right: 10px;
+        }
+        .trigger[disabled] {
+            background-color: #cfffd1;
+            cursor: not-allowed;
+        }
+        .trigger:hover {
+            background-color: #cfffd1;
+        }
+        .trigger:active {
+            background-color: #9cdb9f;
+        }
+        #formula {
+            display: inline-block;
+        }
+        input[type=radio] {
+            position: absolute;
+            visibility: hidden;
+            z-index: -1;
+        }
+        input[type=radio] + label {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            padding-left: 30px;
+            margin-right: 20px;
+        }
+        input[type=radio] + label::before {
+            content: " ";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            box-sizing: border-box;
+            border: 1px solid #7bd87e;
+            border-radius: 50%;
+            vertical-align: middle;
+        }
+        input[type=radio] + label::after {
+            content: " ";
+            position: absolute;
+            top: 50%;
+            left: 5px;
+            transform: translateY(-50%) scale(0);
+            width: 10px;
+            height: 10px;
+            background-color: #7bd87e;
+            border-radius: 50%;
+            transition: transform 300ms cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+        input[type=radio]:checked + label::after {
+            transform: translateY(-50%) scale(1);
+        }
+
+        .row {
+            margin-top: 20px;
+        }
+
+    </style>
+    <script>
+      window.MathJax = {
+        options: {
+          skipHtmlTags: [ //  HTML tags that won't be searched for math
+            'body'
+          ],
+        },
+        startup: {
+          ready: () => {
+            console.log('MathJax is loaded, but not yet initialized')
+            MathJax.startup.defaultReady()
+            console.log('MathJax is initialized, and the initial typeset is queued');
+            [...document.getElementsByClassName('trigger')].forEach(ele => ele.disabled = false)
+          }
+        }
+      }
+    </script>
+</head>
+<body>
+<textarea id="input" placeholder="请输入一串逗号分隔的数字">1,2,3,4,5,6,7,8,9</textarea>
+<div class="row">
+    <input type="radio" name="order" id="row-order" value="row" checked>
+    <label for="row-order">
+        <span>行主序（Direct3D）</span>
+    </label>
+    <input type="radio" name="order" id="column-order" value="column">
+    <label for="column-order">
+        <span>列主序（OpenGL）</span>
+    </label>
+</div>
+<div class="row">
+    <button id="btn-transpose" class="trigger" disabled>转置</button>
+    <button id="btn-minor" class="trigger" disabled>获取余子式</button>
+    <button id="btn-value" class="trigger" disabled>计算行列式的值</button>
+</div>
+<div class="wrap">
+    <div id="formula"></div>
+    <div id="output"></div>
+</div>
+
+<script>
+  (function () {
+    const script = document.createElement('script')
+    script.src = 'https://cdn.bootcdn.net/ajax/libs/mathjax/3.0.5/es5/tex-mml-chtml.js'
+    script.async = true
+    document.head.appendChild(script)
+
+    // 行列式
+    class Determinant {
+      constructor (numList, order) {
+        this.numList = numList
+        this.itemList = this.getItemList(numList, order)
+      }
+
+      // 根据数字列表获取二维数组
+      getItemList (numList, order) {
+        const size = Math.sqrt(numList ? numList.length : 0) // 阶数
+        if (size.toString().indexOf('.') !== -1) {
+          throw Error('行列式格式错误')
+        }
+        let i, j, itemList, subItemList
+        itemList = new Array(size)
+        if (order === 'row') {  // 行主序
+          for (i = 0; i < size; i++) {
+            subItemList = new Array(size)
+            for (j = 0; j < size; j++) {
+              subItemList[j] = numList[i * size + j]
+            }
+            itemList[i] = subItemList
+          }
+        }
+        else if (order === 'column') {  // 列主序
+          for (i = 0; i < size; i++) {
+            subItemList = new Array(size)
+            for (j = 0; j < size; j++) {
+              subItemList[j] = numList[j * size + i]
+            }
+            itemList[i] = subItemList
+          }
+        }
+        return itemList
+      }
+
+      // 获取行列式在i行j列的元素的余子式
+      getMinor (i, j, itemList) {
+        itemList = itemList || this.itemList
+        const size = this.itemList.length
+        const minorItemList = []
+        let _i, _j, subItemList
+        for (_i = 0; _i < size; _i++) {
+          // 不同行
+          if (_i !== i) {
+            subItemList = []
+            for (_j = 0; _j < size; _j++) {
+              // 且不同列
+              if (_j !== j) {
+                subItemList.push(itemList[_i][_j])
+              }
+            }
+            minorItemList.push(subItemList)
+          }
+        }
+        return minorItemList
+      }
+
+      // 获取行列式在i行j列的元素的代数余子式
+      getCofactor (i, j, itemList) {
+        return Math.pow(-1, i + j) * this.getValue(this.getMinor(i, j, itemList))
+      }
+
+      // 获取行列式的值
+      getValue (itemList) {
+        itemList = itemList || this.itemList
+        const size = itemList.length
+        console.log(size, itemList)
+        if (size === 1) {
+          return itemList[0][0]
+        }
+        else if (size === 2) {
+          return itemList[0][0] * itemList[1][1] - itemList[0][1] * itemList[1][0]
+        }
+        else if (size === 3) {
+          return (
+            itemList[0][0] * itemList[1][1] * itemList[2][2]
+            + itemList[0][1] * itemList[1][2] * itemList[2][0]
+            + itemList[0][2] * itemList[1][0] * itemList[2][1]
+            - itemList[0][2] * itemList[1][1] * itemList[2][0]
+            - itemList[0][0] * itemList[1][2] * itemList[2][1]
+            - itemList[0][1] * itemList[1][0] * itemList[2][2]
+          )
+        }
+        else if (size > 3) {
+          let i = 0, sum = 0
+          // 展开第一列
+          for (i = 0; i < size; i++) {
+            // aij * Aij
+            sum += itemList[i][0] * this.getCofactor(this.getMinor(i, 0, itemList))
+          }
+          return sum
+        }
+      }
+
+      // 根据字符串获取实例
+      static fromArrayStr (str, order) {
+        const numList = []
+        str.split(',').forEach(v => v && numList.push(Number(v.trim())))
+        return new Determinant(numList, order)
+      }
+    }
+
+    const btnTransposeEle = document.getElementById('btn-transpose')
+    const btnValueEle = document.getElementById('btn-value')
+    const btnMinor = document.getElementById('btn-minor')
+    const inputEle = document.getElementById('input')
+    const formulaEle = document.getElementById('formula')
+    const orderEleList = document.getElementsByName('order')
+
+    // 渲染数学公式
+    async function renderFormula (inputStr, onRender, onError) {
+      MathJax.texReset()
+      const options = MathJax.getMetricsFor(formulaEle)
+      // options.display = true
+      try {
+        const node = await MathJax.tex2chtmlPromise(inputStr, options)
+        formulaEle.appendChild(node)
+        MathJax.startup.document.clear()
+        MathJax.startup.document.updateDocument()
+        onRender && onRender()
+      } catch (e) {
+        formulaEle.appendChild(document.createElement('pre')).appendChild(document.createTextNode(e.message))
+        onError && onError()
+      }
+    }
+
+    let determinant = new Determinant()
+
+    // 切换行（Direct3D）/列（OpenGL）主序
+    let order = 'row'
+    orderEleList[0].onchange = orderEleList[1].onchange = function () {
+      order = this.value
+    }
+
+    // 获取余子式
+    btnMinor.onclick = function () {
+      determinant = Determinant.fromArrayStr(inputEle.value.trim(), order)
+      const ijStr = prompt('请输入行、列的下标，逗号分隔，如：1,2', '1,2')
+      let posI = 0, posJ = 0
+      if (ijStr && ijStr.indexOf(',') !== -1) {
+        posI = parseInt(ijStr.split(',')[0]) || 0
+        posJ = parseInt(ijStr.split(',')[1]) || 0
+      }
+      const minorItemList = determinant.getMinor(posI, posJ);
+      [...document.getElementsByClassName('trigger')].forEach(ele => ele.disabled = true)
+      const size = minorItemList.length
+      // 打印数学公式
+      const itemList = determinant.itemList
+      const originSize = itemList.length
+      const formulaSrcArray = ['行列式 D=\\begin{vmatrix}']
+      let i, j, subArray
+      for (i = 0; i < originSize; i++) {
+        subArray = []
+        for (j = 0; j < originSize; j++) {
+          subArray.push(j < originSize - 1 ? `${itemList[i][j]}&` : `${itemList[i][j]}\\\\`)
+        }
+        formulaSrcArray.push(subArray.join(''))
+      }
+      formulaSrcArray.push(`\\end{vmatrix} 的余子式 M_{${posI}${posJ}}=\\begin{vmatrix}`)
+      for (i = 0; i < size; i++) {
+        subArray = []
+        for (j = 0; j < size; j++) {
+          subArray.push(j < size - 1 ? `${minorItemList[i][j]}&` : `${minorItemList[i][j]}\\\\`)
+        }
+        formulaSrcArray.push(subArray.join(''))
+      }
+      formulaSrcArray.push(`\\end{vmatrix}=${determinant.getValue(minorItemList)}`)
+      formulaEle.innerHTML = ''
+      console.log(formulaSrcArray.join(''))
+      renderFormula(formulaSrcArray.join(''),
+        function () {
+          [...document.getElementsByClassName('trigger')].forEach(ele => ele.disabled = false)
+        },
+        function () {
+          [...document.getElementsByClassName('trigger')].forEach(ele => ele.disabled = false)
+        })
+    }
+    // 转置
+    btnTransposeEle.onclick = function () {
+      determinant = Determinant.fromArrayStr(inputEle.value.trim(), order);
+      [...document.getElementsByClassName('trigger')].forEach(ele => ele.disabled = true)
+      // 打印数学公式
+      const itemList = determinant.itemList
+      const size = itemList.length
+      const formulaSrcArray = ['det(A^T)=\\begin{vmatrix}']
+      let i, j, subArray
+      for (i = 0; i < size; i++) {
+        subArray = []
+        for (j = 0; j < size; j++) {
+          subArray.push(j < size - 1 ? `${itemList[i][j]}&` : `${itemList[i][j]}\\\\`)
+        }
+        formulaSrcArray.push(subArray.join(''))
+      }
+      formulaSrcArray.push('\\end{vmatrix}^T=\\begin{vmatrix}')
+      for (i = 0; i < size; i++) {
+        subArray = []
+        for (j = 0; j < size; j++) {
+          subArray.push(j < size - 1 ? `${itemList[j][i]}&` : `${itemList[j][i]}\\\\`)
+        }
+        formulaSrcArray.push(subArray.join(''))
+      }
+      formulaSrcArray.push('\\end{vmatrix}')
+      formulaEle.innerHTML = ''
+      renderFormula(formulaSrcArray.join(''),
+        function () {
+          [...document.getElementsByClassName('trigger')].forEach(ele => ele.disabled = false)
+        },
+        function () {
+          [...document.getElementsByClassName('trigger')].forEach(ele => ele.disabled = false)
+        })
+    }
+    // 计算行列式的值
+    btnValueEle.onclick = function () {
+      determinant = Determinant.fromArrayStr(inputEle.value.trim(), order)
+      // 打印数学公式
+      const itemList = determinant.itemList
+      const originSize = itemList.length
+      const formulaSrcArray = ['行列式 D=\\begin{vmatrix}']
+      let i, j, subArray
+      for (i = 0; i < originSize; i++) {
+        subArray = []
+        for (j = 0; j < originSize; j++) {
+          subArray.push(j < originSize - 1 ? `${itemList[i][j]}&` : `${itemList[i][j]}\\\\`)
+        }
+        formulaSrcArray.push(subArray.join(''))
+      }
+      formulaSrcArray.push(`\\end{vmatrix} = ${determinant.getValue()}`)
+      formulaEle.innerHTML = ''
+      console.log(formulaSrcArray.join(''))
+      renderFormula(formulaSrcArray.join(''),
+        function () {
+          [...document.getElementsByClassName('trigger')].forEach(ele => ele.disabled = false)
+        },
+        function () {
+          [...document.getElementsByClassName('trigger')].forEach(ele => ele.disabled = false)
+        })
+    }
+  })()
+</script>
+</body>
+</html>
