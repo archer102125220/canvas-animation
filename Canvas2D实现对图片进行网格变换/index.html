@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="zh-cn">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+  <title>图形变换</title>
+  <style>
+    * {
+      padding: 0;
+      margin: 0;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+    #canvas {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+  </style>
+</head>
+
+<body>
+<canvas id='canvas' width="800" height="800">浏览器不支持canvas</canvas>
+
+<script charset="utf-8">
+  // 行列式
+  class Determinant {
+    constructor (numList, order) {
+      numList = numList || []
+      order = order || 'row'
+      let itemList = [[]]
+      if (numList && numList.length) {
+        itemList = this.getItemList(numList, order)
+      }
+      this.order = order
+      this.numList = numList
+      this.itemList = itemList
+    }
+
+    // 根据数字列表获取二维数组
+    getItemList (numList, order) {
+      const size = Math.sqrt(numList ? numList.length : 0) // 阶数
+      if (size.toString().indexOf('.') !== -1) {
+        throw Error('行列式格式错误')
+      }
+      let i, j, itemList, subItemList
+      itemList = new Array(size)
+      if (order === 'row') {  // 行主序
+        for (i = 0; i < size; i++) {
+          subItemList = new Array(size)
+          for (j = 0; j < size; j++) {
+            subItemList[j] = numList[i * size + j]
+          }
+          itemList[i] = subItemList
+        }
+      }
+      else if (order === 'column') {  // 列主序
+        for (i = 0; i < size; i++) {
+          subItemList = new Array(size)
+          for (j = 0; j < size; j++) {
+            subItemList[j] = numList[j * size + i]
+          }
+          itemList[i] = subItemList
+        }
+      }
+      return itemList
+    }
+
+    // 获取行列式在i行j列的元素的余子式
+    getMinor (i, j, itemList) {
+      itemList = itemList || this.itemList
+      const size = this.itemList.length
+      const minorItemList = []
+      let _i, _j, subItemList
+      for (_i = 0; _i < size; _i++) {
+        // 不同行
+        if (_i !== i) {
+          subItemList = []
+          for (_j = 0; _j < size; _j++) {
+            // 且不同列
+            if (_j !== j) {
+              subItemList.push(itemList[_i][_j])
+            }
+          }
+          minorItemList.push(subItemList)
+        }
+      }
+      return minorItemList
+    }
+
+    // 获取行列式在i行j列的元素的代数余子式
+    getCofactor (i, j, itemList) {
+      itemList = itemList || this.itemList
+      return Math.pow(-1, i + j) * this.getValue(this.getMinor(i, j, itemList))
+    }
+
+    // 获取行列式的值
+    getValue (itemList) {
+      itemList = itemList || this.itemList
+      const size = itemList.length
+      if (size === 1) {
+        return itemList[0][0]
+      }
+      else if (size === 2) {
+        return itemList[0][0] * itemList[1][1] - itemList[0][1] * itemList[1][0]
+      }
+      else if (size === 3) {
+        return (
+          itemList[0][0] * itemList[1][1] * itemList[2][2]
+          + itemList[0][1] * itemList[1][2] * itemList[2][0]
+          + itemList[0][2] * itemList[1][0] * itemList[2][1]
+          - itemList[0][2] * itemList[1][1] * itemList[2][0]
+          - itemList[0][0] * itemList[1][2] * itemList[2][1]
+          - itemList[0][1] * itemList[1][0] * itemList[2][2]
+        )
+      }
+      else if (size > 3) {
+        let i = 0, sum = 0
+        // 展开第一列
+        for (i = 0; i < size; i++) {
+          // aij * Aij
+          sum += itemList[i][0] * this.getCofactor(this.getMinor(i, 0, itemList))
+        }
+        return sum
+      }
+    }
+
+    // 根据字符串获取实例
+    static fromArrayStr (str, order) {
+      const numList = []
+      str.split(',').forEach(v => v && numList.push(Number(v.trim())))
+      return new Determinant(numList, order)
+    }
+
+    // 根据二维数组获取实例
+    static fromItemList (itemList) {
+      const determinant = new Determinant()
+      determinant.itemList = itemList
+      return determinant
+    }
+  }
+
+  // 矩阵
+  class Matrix {
+    constructor (numList, m, n, order) {
+      numList = numList || []
+      m = m || 0
+      n = n || 0
+      order = order || 'row'
+      let itemList = [[]]
+      if (m && n && m * n === numList.length) {
+        itemList = Matrix.getItemList(numList, m, n, order)
+      }
+      this.order = order
+      this.itemList = itemList
+      this.numList = numList
+      this.m = m
+      this.n = n
+    }
+
+    // 根据数字列表获取m行n列的二维数组
+    static getItemList (numList, m, n, order) {
+      if (!(m && n && m * n === numList.length)) {
+        throw Error('矩阵格式错误')
+      }
+      let i, j, itemList, subItemList
+      itemList = new Array(m)
+      if (order === 'row') {  // 行主序
+        for (i = 0; i < m; i++) {
+          subItemList = new Array(n)
+          for (j = 0; j < n; j++) {
+            subItemList[j] = numList[i * n + j]
+          }
+          itemList[i] = subItemList
+        }
+      }
+      else if (order === 'column') {  // 列主序
+        for (i = 0; i < m; i++) {
+          subItemList = new Array(n)
+          for (j = 0; j < n; j++) {
+            subItemList[j] = numList[j * m + i]
+          }
+          itemList[i] = subItemList
+        }
+      }
+      return itemList
+    }
+
+    // 获取矩阵的转置
+    getTransposedMatrix () {
+      const itemList = this.itemList
+      const m = this.m
+      const n = this.n
+      const newItemList = new Array(n)
+      let i, j, subItemList
+      for (i = 0; i < n; i++) {
+        subItemList = new Array(m)
+        for (j = 0; j < m; j++) {
+          subItemList[j] = itemList[j][i]
+        }
+        newItemList[i] = subItemList
+      }
+      return Matrix.fromItemList(newItemList)
+    }
+
+    // 矩阵相加
+    plus (matrix, minus) {
+      if (this.m === matrix.m && this.n === matrix.n) {
+        const itemList = JSON.parse(JSON.stringify(this.itemList))
+        let i, j
+        for (i = 0; i < this.m; i++) {
+          for (j = 0; j < this.n; j++) {
+            itemList[i][j] = minus ? this.itemList[i][j] - matrix.itemList[i][j] : this.itemList[i][j] + matrix.itemList[i][j]
+          }
+        }
+        return Matrix.fromItemList(itemList)
+      }
+      else {
+        throw new Error('不是同型矩阵，无法相加')
+      }
+    }
+
+    // 矩阵相减
+    minus (matrix) {
+      return this.plus(matrix, true)
+    }
+
+    // 矩阵相乘
+    multiply (matrix) {
+      if (this.n === matrix.m) {
+        const m = this.m
+        const p = this.n
+        const n = matrix.n
+        let i, j, k, sum
+        const itemList1 = this.itemList
+        const itemList2 = matrix.itemList
+        const newItemList = new Array(m)
+        let subItemList
+        for (i = 0; i < m; i++) {
+          subItemList = new Array(n)
+          for (j = 0; j < n; j++) {
+            sum = 0
+            for (k = 0; k < p; k++) {
+              sum += itemList1[i][k] * itemList2[k][j]
+            }
+            subItemList[j] = sum
+          }
+          newItemList[i] = subItemList
+        }
+        return Matrix.fromItemList(newItemList)
+      }
+      else {
+        throw Error('矩阵无法相乘')
+      }
+    }
+
+    // 获取矩阵的行列式
+    getDeterminant () {
+      if (this.m === this.n) {
+        return Determinant.fromItemList(this.itemList)
+      }
+      else {
+        throw Error('行列式格式错误')
+      }
+    }
+
+    // 获取方阵的伴随矩阵
+    getAdjugateMatrix () {
+      const determinant = this.getDeterminant()
+      const size = this.m
+      const itemList = this.itemList
+      const newItemList = JSON.parse(JSON.stringify(itemList))
+      let i, j
+      for (i = 0; i < size; i++) {
+        for (j = 0; j < size; j++) {
+          newItemList[j][i] = determinant.getCofactor(i, j)
+        }
+      }
+      return Matrix.fromItemList(newItemList)
+    }
+
+    // 获取方阵的伴随矩阵
+    getInverseMatrix () {
+      const determinant = this.getDeterminant()
+      const determinantValue = determinant.getValue()
+      if (determinantValue === 0) {
+        throw new Error('矩阵不可逆')
+      }
+      const value = 1 / determinantValue
+      const size = this.m
+      const itemList = this.itemList
+      const newItemList = JSON.parse(JSON.stringify(itemList))
+      let i, j
+      for (i = 0; i < size; i++) {
+        for (j = 0; j < size; j++) {
+          newItemList[j][i] = determinant.getCofactor(i, j) * value
+        }
+      }
+      return Matrix.fromItemList(newItemList)
+    }
+
+    // 获取行列式的值
+    getValue (itemList) {
+      itemList = itemList || this.itemList
+      const size = itemList.length
+      if (size === 1) {
+        return itemList[0][0]
+      }
+      else if (size === 2) {
+        return itemList[0][0] * itemList[1][1] - itemList[0][1] * itemList[1][0]
+      }
+      else if (size === 3) {
+        return (
+          itemList[0][0] * itemList[1][1] * itemList[2][2]
+          + itemList[0][1] * itemList[1][2] * itemList[2][0]
+          + itemList[0][2] * itemList[1][0] * itemList[2][1]
+          - itemList[0][2] * itemList[1][1] * itemList[2][0]
+          - itemList[0][0] * itemList[1][2] * itemList[2][1]
+          - itemList[0][1] * itemList[1][0] * itemList[2][2]
+        )
+      }
+      else if (size > 3) {
+        let i = 0, sum = 0
+        // 展开第一列
+        for (i = 0; i < size; i++) {
+          // aij * Aij
+          sum += itemList[i][0] * Math.pow(-1, i) * this.getValue(this.getMinor(i, 0, itemList))
+        }
+        return sum
+      }
+    }
+
+    // 根据字符串获取实例
+    static fromArrayStr (str, m, n, order) {
+      const numList = []
+      str.split(',').forEach(v => v && numList.push(Number(v.trim())))
+      if (!(m && n && m * n === numList.length)) {
+        throw Error('矩阵格式错误')
+      }
+      return new Matrix(numList, m, n, order)
+    }
+
+    // 根据二维数组获取实例
+    static fromItemList (itemList, order) {
+      order = order || 'row'
+      const matrix = new Matrix()
+      matrix.itemList = itemList
+      matrix.m = itemList.length
+      matrix.n = itemList[0].length
+      matrix.order = order
+      const numList = []
+      let i, j
+      if (order === 'row') {
+        for (i = 0; i < matrix.m; i++) {
+          for (j = 0; j < matrix.n; j++) {
+            numList.push(itemList[i][j])
+          }
+        }
+      }
+      else if (order === 'column') {
+        for (i = 0; i < matrix.n; i++) {
+          for (j = 0; j < matrix.m; j++) {
+            numList.push(itemList[j][i])
+          }
+        }
+      }
+      matrix.numList = numList
+      return matrix
+    }
+  }
+
+  let ctx = null
+  let imgWidth = 0
+  let imgHeight = 0
+  const CANVAS_WIDTH = 800
+  const CANVAS_HEIGHT = 800
+  const arcRadius = 15
+  let newPoints // 图片四个角的坐标
+  let originPoints // 图片四个角的原始坐标
+  const splitH = 10 // 图片分割成的行数
+  const splitV = 10 // 图片分割成的列数
+  let splitPoints = [] // 被分割出来的点的集合
+  let originSplitPoints // 被分割出来的点的原始集合
+
+  let imgUrl = 'https://kaysama.gitee.io/image-host/happy.jpg'
+  const matches = location.search.substring(1).match(/(^|&)img=([^&]*)(&|$)/)
+  if (matches) {
+    imgUrl = decodeURI(matches[2])
+  }
+  let imgLeft, imgTop // 图片位置
+  const img = new Image()
+  img.src = imgUrl
+  img.onload = function () {
+    const canvas = document.getElementById('canvas')
+    let pageWidth = window.innerWidth
+    let pageHeight = window.innerHeight
+    let canvasLeft = (pageWidth - CANVAS_WIDTH) / 2
+    let canvasTop = (pageHeight - CANVAS_HEIGHT) / 2
+    let targetPoint // 选中的圆
+    let mouseX, mouseY // 鼠标位置
+
+    ctx = canvas.getContext('2d')
+
+    canvas.width = CANVAS_WIDTH
+    canvas.height = CANVAS_HEIGHT
+
+    // 图片最宽最高不能超过canvas宽高的一半
+    imgWidth = img.width
+    imgHeight = img.height
+    const imgRatio = imgWidth / imgHeight
+    if (imgWidth > CANVAS_WIDTH / 2) {
+      imgWidth = CANVAS_WIDTH / 2
+      imgHeight = imgWidth / imgRatio
+    }
+    if (imgHeight > CANVAS_HEIGHT / 2) {
+      imgHeight = CANVAS_HEIGHT / 2
+      imgWidth = imgHeight * imgRatio
+    }
+    img.width = imgWidth
+    img.height = imgHeight
+
+    imgLeft = (canvas.width - imgWidth) / 2
+    imgTop = (canvas.height - imgHeight) / 2
+
+    originPoints = [
+      {
+        x: imgLeft, y: imgTop
+      },
+      {
+        x: imgLeft + imgWidth, y: imgTop
+      },
+      {
+        x: imgLeft + imgWidth, y: imgTop + imgHeight
+      },
+      {
+        x: imgLeft, y: imgTop + imgHeight
+      },
+    ]
+
+    originSplitPoints = generatePoints(originPoints, splitH, splitV)
+
+    newPoints = JSON.parse(JSON.stringify(originPoints))
+
+    window.onresize = function () {
+      pageWidth = document.documentElement.clientWidth
+      pageHeight = document.documentElement.clientHeight
+      canvasLeft = (pageWidth - CANVAS_WIDTH) / 2
+    }
+    let dragging = false // 拖动中
+    document.body.onmousedown = function (e) {
+      dragging = true
+      mouseX = e.clientX - canvasLeft
+      mouseY = e.clientY - canvasTop
+      console.log(newPoints, e.clientY, mouseX, mouseY)
+      for (let i = 0; i < 4; i++) {
+        if (mouseX > newPoints[i].x - arcRadius && mouseX < newPoints[i].x + arcRadius && mouseY > newPoints[i].y - arcRadius && mouseY < newPoints[i].y + arcRadius) {
+          targetPoint = newPoints[i]
+          console.log('targetPoint:', targetPoint)
+          break
+        }
+      }
+    }
+    document.body.onmousemove = function (e) {
+      if (dragging && targetPoint) {
+        if (e.pageX - canvasLeft < 0) {
+          targetPoint.x = 0
+        }
+        else if (e.pageX - canvasLeft > CANVAS_WIDTH) {
+          targetPoint.x = CANVAS_WIDTH
+        }
+        else {
+          targetPoint.x = e.pageX - canvasLeft
+        }
+
+        if (e.pageY - canvasTop < 0) {
+          targetPoint.y = 0
+        }
+        else if (e.pageY - canvasTop > CANVAS_HEIGHT) {
+          targetPoint.y = CANVAS_HEIGHT
+        }
+        else {
+          targetPoint.y = e.pageY - canvasTop
+        }
+        update()
+      }
+    }
+    document.body.onmouseup = function (e) {
+      dragging = false
+    }
+
+    update()
+  }
+
+  function update () {
+
+    const newSplitPoints = generatePoints(newPoints, splitH, splitV)
+
+    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+    ctx.save()
+    ctx.fillStyle = 'black'
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+
+    for (let i = 0; i < newSplitPoints.length; i++) {
+      if (i < newSplitPoints.length - splitH - 2 && (i + 1) % (splitH + 1) !== 0) {
+        drawTriangleImage(
+          originSplitPoints[i + 1], originSplitPoints[i + 1 + splitH + 1], originSplitPoints[i + splitH + 1],
+          newSplitPoints[i + 1], newSplitPoints[i + 1 + splitH + 1], newSplitPoints[i + splitH + 1]
+        ) // 先画下三角
+        drawTriangleImage(
+          originSplitPoints[i], originSplitPoints[i + 1], originSplitPoints[i + splitH + 1],
+          newSplitPoints[i], newSplitPoints[i + 1], newSplitPoints[i + splitH + 1]
+        )  // 再画上三角
+      }
+      // 四个角
+      if (i === 0 || i === splitH || i === (splitH + 1) * splitV || i === (splitH + 1) * (splitV + 1) - 1) {
+        drawArc(newSplitPoints[i])
+      }
+    }
+    ctx.restore()
+  }
+
+  /**
+   * 生成分割点
+   * @param points 四边形四个点
+   * @param splitH “水平”方向被等分数
+   * @param splitV “竖直”方向被等分数
+   */
+  function generatePoints (points, splitH, splitV) {
+    splitPoints = []
+    let vLeft = {
+      x: (points[3].x - points[0].x) / splitV,
+      y: (points[3].y - points[0].y) / splitV
+    }
+    let vRight = {
+      x: (points[2].x - points[1].x) / splitV,
+      y: (points[2].y - points[1].y) / splitV
+    }
+    let x1, y1, x2, y2
+    let i, j
+    for (i = 0; i <= splitV; i++) {
+      x1 = points[0].x + vLeft.x * i
+      y1 = points[0].y + vLeft.y * i
+      x2 = points[1].x + vRight.x * i
+      y2 = points[1].y + vRight.y * i
+      for (j = 0; j <= splitH; j++) {
+        splitPoints.push({
+          x: x1 + (x2 - x1) / splitH * j,
+          y: y1 + (y2 - y1) / splitH * j
+        })
+      }
+    }
+    return splitPoints
+  }
+
+  /**
+   * 画三角形图片
+   */
+  function drawTriangleImage (p1, p2, p3, newP1, newP2, newP3) {
+    const matrixFrom = new Matrix(
+      // 使用列向量
+      [
+        p1.x, p1.y, 1,
+        p2.x, p2.y, 1,
+        p3.x, p3.y, 1,
+      ],
+      3, // 3行（带齐次坐标 ）
+      3, // 3列
+      'column'
+    )
+    const matrixTo = new Matrix(
+      // 使用列向量
+      [
+        newP1.x, newP1.y, 1,
+        newP2.x, newP2.y, 1,
+        newP3.x, newP3.y, 1,
+      ],
+      3, // 3行（带齐次坐标 ）
+      3, // 3列
+      'column'
+    )
+    const matrixTransform = matrixTo.multiply(matrixFrom.getInverseMatrix())
+    const itemList = matrixTransform.itemList
+    ctx.save()
+    //根据变换后的坐标创建剪切区域
+    ctx.beginPath()
+    ctx.moveTo(newP1.x, newP1.y)
+    ctx.lineTo(newP2.x, newP2.y)
+    ctx.lineTo(newP3.x, newP3.y)
+    ctx.closePath()
+    ctx.lineWidth = 1
+    ctx.strokeStyle = 'green'
+    ctx.stroke()
+    ctx.clip()
+    //绘制图片
+    ctx.transform(itemList[0][0], itemList[1][0], itemList[0][1], itemList[1][1], itemList[0][2], itemList[1][2])
+    ctx.drawImage(img, imgLeft, imgTop, imgWidth, imgHeight)
+    ctx.restore()
+  }
+
+  /**
+   * 画四边形的四个点
+   */
+  function drawArc (point) {
+    ctx.save()
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    ctx.arc(point.x, point.y, arcRadius, 0, 2 * Math.PI)
+    ctx.strokeStyle = 'red'
+    ctx.stroke()
+    ctx.restore()
+  }
+
+</script>
+</body>
+
+</html>
