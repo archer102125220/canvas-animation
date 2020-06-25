@@ -1,39 +1,40 @@
 <!DOCTYPE html>
 <html lang="zh-cn">
 <head>
-    <meta charset="UTF-8">
-    <title>ascii art</title>
-    <style>
+  <meta charset="UTF-8">
+  <title>ascii art</title>
+  <style>
 
-        * {
-            margin: 0;
-            padding: 0;
-        }
+    * {
+      margin: 0;
+      padding: 0;
+    }
 
-        canvas, video, #container {
-            display: block;
-            margin: auto;
-        }
+    canvas, video, #container {
+      display: block;
+      margin: auto;
+    }
 
-        #container {
-            line-height: 12px;
-            font-size: 12px;
-            font-family: 'SimHei', monospace;
-            letter-spacing: 6px;
-            margin-top: 10px;
-        }
+    #container {
+      line-height: 12px;
+      font-size: 12px;
+      font-family: 'SimHei', monospace;
+      letter-spacing: 6px;
+      margin-top: 10px;
+    }
 
-        video {
-            outline: 0;
-            max-height: 300px;
-        }
+    video {
+      outline: 0;
+      max-height: 300px;
+    }
 
-    </style>
+  </style>
 </head>
 <body>
 <video id="video" controls>
-    <source src="./Bad Apple!!.mp4" type="video/mp4">
-    您的浏览器不支持 HTML5 video 标签。
+  <source src="http://omgfaq.com/video/Bad Apple!!.mp4" type="video/mp4">
+  <!--<source src="./Bad Apple!!.mp4" type="video/mp4">-->
+  您的浏览器不支持 HTML5 video 标签。
 </video>
 <div id="container"></div>
 <script>
@@ -53,7 +54,7 @@
     var maxWidth = 400, maxHeight = 400
 
     var video = document.getElementById('video')
-    video.crossOrigin = 'anonymous'
+    video.crossOrigin = 'anonymous' // 允许跨域
     video.onloadeddata = function () {
       offScreenCvsWidth = video.videoWidth
       offScreenCvsHeight = video.videoHeight

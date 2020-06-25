@@ -1,26 +1,27 @@
 <!DOCTYPE html>
 <html lang="zh-cn">
 <head>
-    <meta charset="UTF-8">
-    <title>ascii art</title>
-    <style>
+  <meta charset="UTF-8">
+  <title>ascii art</title>
+  <style>
 
-        * {
-            margin: 0;
-            padding: 0;
-        }
+    * {
+      margin: 0;
+      padding: 0;
+    }
 
-        canvas, video {
-            display: block;
-            margin: auto;
-        }
+    canvas, video {
+      display: block;
+      margin: auto;
+    }
 
-    </style>
+  </style>
 </head>
 <body>
 <video id="video" controls>
-    <source src="./mov_bbb.mp4" type="video/mp4">
-    您的浏览器不支持 HTML5 video 标签。
+  <source src="http://omgfaq.com/video/mov_bbb.mp4" type="video/mp4">
+  <!--<source src="./mov_bbb.mp4" type="video/mp4">-->
+  您的浏览器不支持 HTML5 video 标签。
 </video>
 <canvas id="ascii-canvas"></canvas>
 <script>
@@ -38,6 +39,7 @@
 
     var maxWidth = 400, maxHeight = 400
 
+    video.crossOrigin = 'anonymous' // 允许跨域
     video.onloadeddata = function () {
       offScreenCvsWidth = video.videoWidth
       offScreenCvsHeight = video.videoHeight
