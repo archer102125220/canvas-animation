@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+  <meta charset="utf-8">
+  <title>本地视频字幕截取</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    html {
+      height: 100%;
+      background-color: #f8f8f8;
+    }
+    body {
+      height: 100%;
+      box-sizing: border-box;
+      padding: 30px;
+    }
+    #app {
+      height: 100%;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+    }
+    #left {
+      margin-right: 10px;
+      border-right: 1px solid #ccc;
+      padding-right: 10px;
+    }
+    #right {
+      height: 100%;
+      overflow: auto;
+      color: #999;
+    }
+    #video-wrapper {
+      position: relative;
+      font-size: 0;
+    }
+    #video {
+      display: inline-block;
+      /*height: 100%;*/
+      margin-right: 10px;
+    }
+    #canvas {
+      display: inline-block;
+      background-color: #f0f0f0;
+    }
+    #cc {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 0;
+      height: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1;
+      user-select: none;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 300ms;
+    }
+    #cc.show {
+      opacity: 1;
+    }
+    .button {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 14px;
+      padding: 2px 8px;
+      border: 1px solid #8eddff;
+      background-color: #98e5ff;
+      cursor: pointer;
+      border-radius: 4px;
+      outline: none;
+      margin-right: 10px;
+      user-select: none;
+    }
+    .button:hover {
+      background-color: #a3edff;
+    }
+    .button:active {
+      background-color: #7acbff;
+    }
+    input[type=file] {
+      display: none;
+    }
+    input[type=checkbox] {
+      display: block;
+      width: 15px;
+      height: 15px;
+    }
+    input[type=color] {
+      display: block;
+      width: 40px;
+      height: 20px;
+    }
+    input[type=range] {
+      display: inline-block;
+      width: 600px;
+      vertical-align: middle;
+    }
+    dl {
+      margin-top: 10px;
+      white-space: nowrap;
+    }
+    dt {
+      display: inline-block;
+      width: 140px;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+    dd {
+      display: inline-block;
+      vertical-align: middle;
+    }
+    section {
+      margin-top: 20px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.js"></script>
+</head>
+<body>
+<div id="app">
+  <div id="left">
+    <div id="video-wrapper">
+      <video id="video" ref="video" :controls="controls" :style="videoStyle" @loadedmetadata="onVideoMetaLoad($event)"></video>
+      <div id="cc" :class="{show: ccShow||ccForceShow}" :style="ccStyle"></div>
+    </div>
+    <label id="video-picker" class="button" for="file-video">{{ fileName }}</label>
+    <button id="draw" class="button" @click="drawVideo">截取</button>
+    <section>
+      <dl>
+        <dt>{{ ccForceShow ? '隐藏' : '显示' }}字幕遮罩</dt>
+        <dt><input type="checkbox" v-model="ccForceShow"></dt>
+      </dl>
+    </section>
+    <section>
+      <dl>
+        <dt>修改遮罩颜色</dt>
+        <dt><input type="color" v-model="cc.color"/></dt>
+      </dl>
+    </section>
+    <section>
+      <dl>
+        <dt>{{ controls ? '隐藏' : '显示' }}视频控制器</dt>
+        <dt><input type="checkbox" v-model="controls"></dt>
+      </dl>
+    </section>
+    <section>
+      <dl>
+        <dt>字幕距离左侧</dt>
+        <dd>
+          <input v-model="cc.left" type="range" min="0" :max="video.width" step="1" @input="onCcChange('l')">
+        </dd>
+      </dl>
+      <dl>
+        <dt>字幕距离顶部</dt>
+        <dd>
+          <input v-model="cc.top" type="range" min="0" :max="video.height" step="1" @input="onCcChange('t')">
+        </dd>
+      </dl>
+      <dl>
+        <dt>字幕宽度</dt>
+        <dd>
+          <input v-model="cc.width" type="range" min="0" :max="video.width" step="1" @input="onCcChange('w')">
+        </dd>
+      </dl>
+      <dl>
+        <dt>字幕高度</dt>
+        <dd>
+          <input v-model="cc.height" type="range" min="0" :max="video.height" step="1" @input="onCcChange('h')">
+        </dd>
+      </dl>
+      <dl>
+        <dt>调整尺寸</dt>
+        <dd>
+          <input id="scale" v-model="exportScale" type="range" min="0" :max="1" step="0.01">
+        </dd>
+      </dl>
+    </section>
+  </div>
+  <div id="right">
+    <canvas id="canvas" ref="canvas" title="右键另存为" :style="canvasStyle"></canvas>
+    <p>右键另存为导出图片</p>
+  </div>
+  <input id="file-video" ref="fileVideo" type="file" accept="video/*" @change="onFileChange($event)">
+</div>
+<script>
+
+  // 16进制字符串转rgb
+  function hex2rgb (hexStr) {
+    const value = parseInt(hexStr.replace('#', ''), 16)
+    const r = value >> 16 // 获取17~24位
+    const g = value >> 8 & 0xff // 获取9~16位
+    const b = value & 0xff // 获取0~8位
+    return { r, g, b }
+  }
+
+  let $canvas
+  let $video
+  let ctx
+  let drawTimes = -1
+  let fullHeight = 0
+  const offscreenCvs = new OffscreenCanvas(0, 0)
+  const offscreenCtx = offscreenCvs.getContext('2d')
+
+  window.$vm = new Vue({
+    el: '#app',
+    data: function () {
+      return {
+        controls: true,
+        video: {
+          width: 200,
+          height: 200,
+        },
+        videoHeight: 0,
+        ccForceShow: true,
+        ccShow: false,
+        ccShowTimer: -1,
+        exportScale: 1,
+        cc: {
+          left: 0,
+          top: 0,
+          width: 0,
+          height: 0,
+          color: '#009688',
+        },
+        fileName: '选择文件'
+      }
+    },
+    computed: {
+      canvasStyle () {
+        return {
+          width: `${this.video.width * this.exportScale}px`,
+          height: 'auto',
+        }
+      },
+      videoStyle () {
+        return {
+          width: `${this.video.width * this.exportScale}px`,
+          height: `${this.video.height * this.exportScale}px`,
+        }
+      },
+      ccStyle () {
+        return {
+          left: `${this.cc.left * this.exportScale}px`,
+          top: `${this.cc.top * this.exportScale}px`,
+          width: `${this.cc.width * this.exportScale}px`,
+          height: `${this.cc.height * this.exportScale}px`,
+          backgroundColor: `${this.ccColor}`,
+        }
+      },
+      ccColor () {
+        const rgb = hex2rgb(this.cc.color)
+        return `rgba(${rgb.r},${rgb.g},${rgb.b},0.5)`
+      },
+    },
+    mounted () {
+      $video = this.$refs.video
+      $canvas = this.$refs.canvas
+      ctx = $canvas.getContext('2d')
+    },
+    methods: {
+      onFileChange (e) {
+        const $fileVideo = this.$refs.fileVideo
+        const file = $fileVideo.files[0]
+        this.fileName = file.name
+        $video.src = URL.createObjectURL(file)
+      },
+      onCcChange (e) {
+        this.ccShow = true
+        clearTimeout(this.ccShowTimer)
+        this.ccShowTimer = setTimeout(() => {
+          this.ccShow = false
+        }, 1000)
+
+      },
+      onVideoMetaLoad () {
+        const $video = this.$refs.video
+        const videoWidth = Math.floor($video.videoWidth)
+        const videoHeight = Math.floor($video.videoHeight)
+        this.video = {
+          width: videoWidth,
+          height: videoHeight,
+        }
+        const ccHeight = 50
+        const ccLeft = 0
+        const ccWidth = Math.floor(videoWidth)
+        const ccTop = videoHeight - ccHeight - 15
+        $canvas.width = videoWidth
+        $canvas.height = videoHeight
+        this.cc = {
+          width: ccWidth,
+          height: ccHeight,
+          left: ccLeft,
+          top: ccTop,
+          color: this.cc.color,
+        }
+        drawTimes = 0
+        fullHeight = videoHeight
+        this.exportScale = 1
+      },
+      drawVideo () {
+        const video = this.video
+        const cc = {
+          left: Math.floor(this.cc.left),
+          top: Math.floor(this.cc.top),
+          width: Math.floor(this.cc.width),
+          height: Math.floor(this.cc.height),
+        }
+        if (drawTimes === -1) {
+          return alert('请先导入视频')
+        }
+        if (drawTimes === 0) {
+          ctx.drawImage($video, 0, 0, video.width, video.height)
+          drawTimes++
+        }
+        else {
+          const newHeight = fullHeight + cc.height
+          offscreenCvs.width = video.width
+          offscreenCvs.height = fullHeight
+          offscreenCtx.drawImage($canvas, 0, 0, video.width, fullHeight)
+          $canvas.height = newHeight
+          ctx.drawImage(offscreenCvs, 0, 0, video.width, fullHeight)
+          createImageBitmap($video, cc.left, cc.top, cc.width, cc.height)
+            .then(res => {
+              ctx.drawImage(res, cc.left, fullHeight, cc.width, cc.height)
+              fullHeight = newHeight
+              drawTimes++
+            })
+        }
+      },
+    }
+  })
+</script>
+</body>
+</html>
