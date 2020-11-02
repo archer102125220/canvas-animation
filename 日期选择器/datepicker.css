@@ -1,0 +1,158 @@
+* {
+  margin: 0;
+  padding: 0;
+  outline: none; }
+
+html, body {
+  width: 100%;
+  height: 100%; }
+
+ul, li {
+  list-style: none; }
+
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  padding-left: 20px; }
+
+.date-picker-group {
+  width: 220px;
+  height: 30px;
+  border-radius: 50px;
+  position: relative;
+  margin: 100px; }
+.date-picker-group > input {
+  display: block;
+  width: 100%;
+  height: 100%;
+  line-height: 28px;
+  border: 1px solid #d0d0d0;
+  font-size: 14px; }
+.date-picker-group > .trigger {
+  position: absolute;
+  top: 0;
+  right: 5px;
+  height: 100%;
+  width: 20px;
+  background: url("./date_trigger.png") no-repeat center;
+  background-size: contain;
+  cursor: pointer; }
+
+.calendar-panel {
+  font-size: 20px;
+  position: absolute;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  user-select: none;
+  border-radius: 4px;
+  box-shadow: 0 0 15px -7px #000; }
+.calendar-panel > .panel-header {
+  text-align: center;
+  height: 1.5em;
+  line-height: 1.5em;
+  position: relative;
+  background-color: #ebebeb;
+  border-radius: 5px 5px 0 0; }
+.calendar-panel > .panel-header > .YY-MM {
+  display: inline-block;
+  font-size: 0.75em;
+  height: 2em;
+  line-height: 2em;
+  vertical-align: top; }
+.calendar-panel > .panel-header > .btn-control {
+  position: absolute;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border: 1px solid #000;
+  border-top: none;
+  border-right: none;
+  transform-origin: center;
+  cursor: pointer; }
+.calendar-panel > .panel-header > .btn-control.prev-year {
+  border-width: 1px;
+  left: 0.5em;
+  transform: translateY(-30%) rotate(45deg); }
+.calendar-panel > .panel-header > .btn-control.prev-year::after {
+  content: " ";
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 1px solid #000;
+  border-top: none;
+  border-right: none;
+  transform-origin: center;
+  margin: -3px 0 0 2px; }
+.calendar-panel > .panel-header > .btn-control.prev-month {
+  left: 1.5em;
+  transform: translateY(-30%) rotate(45deg); }
+.calendar-panel > .panel-header > .btn-control.next-year {
+  border-width: 1px;
+  right: 0.5em;
+  transform: translateY(-30%) rotate(-135deg); }
+.calendar-panel > .panel-header > .btn-control.next-year::after {
+  content: " ";
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 1px solid #000;
+  border-top: none;
+  border-right: none;
+  transform-origin: center;
+  margin: -3px 0 0 2px; }
+.calendar-panel > .panel-header > .btn-control.next-month {
+  right: 1.5em;
+  transform: translateY(-30%) rotate(-135deg); }
+.calendar-panel > .grid {
+  text-align: center; }
+.calendar-panel > .grid > .weekdays {
+  /* display: none; */
+  padding: 0 0.1em;
+  color: #808080;
+  border-bottom: 1px solid #dadada;
+  height: 1.25em;
+  line-height: 1.25em;
+  white-space: nowrap; }
+.calendar-panel > .grid > .weekdays > li {
+  float: left;
+  width: 2em;
+  margin: 0 0.2em;
+  font-size: 0.75em;
+  height: 1.667em;
+  line-height: 1.667em;
+  vertical-align: top; }
+.calendar-panel > .grid > .days {
+  padding: 0.1em; }
+.calendar-panel > .grid > .days > .row {
+  margin-top: 0.1em; }
+.calendar-panel > .grid > .days > .row > ul {
+  height: 1.5em;
+  white-space: nowrap; }
+.calendar-panel > .grid > .days > .row > ul > .day {
+  float: left;
+  width: 2em;
+  margin: 0 0.2em;
+  font-size: 0.75em;
+  height: 2em;
+  line-height: 2em;
+  border-radius: 50%;
+  text-align: center;
+  box-sizing: border-box;
+  cursor: pointer; }
+.calendar-panel > .grid > .days > .row > ul > .day.today {
+  background-color: #e7e7e7; }
+.calendar-panel > .grid > .days > .row > ul > .day.today:hover {
+  background-color: #ffa32a; }
+.calendar-panel > .grid > .days > .row > ul > .day:hover, .calendar-panel > .grid > .days > .row > ul > .day.focus {
+  border-radius: 5px;
+  background-color: #ffa32a;
+  color: #fff; }
+.calendar-panel > .grid > .days > .row > ul > .day.disabled {
+  color: #d0d0d0;
+  cursor: default; }
+.calendar-panel > .grid > .days > .row > ul > .day.disabled:hover {
+  background-color: transparent;
+  color: #d0d0d0; }
+
+/*# sourceMappingURL=datepicker.css.map */

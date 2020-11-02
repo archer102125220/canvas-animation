@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>日期选择器</title>
+  <link rel="stylesheet" href="./datepicker.css">
+  <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+</head>
+
+<body>
+
+<div id="application">
+  <div class="date-picker-group">
+    <input type="text" placeholder="点击按钮选择日期" readonly/>
+    <i class="trigger"></i>
+  </div>
+  <div id="_calendar-panel" class="calendar-panel" style="left: 120px; top: 135px; display: block;">
+    <div class="panel-header">
+      <i class="btn-control prev-year" title="上一年"></i>
+      <i class="btn-control prev-month" title="上一月"></i>
+      <span class="YY-MM">年月</span>
+      <i class="btn-control next-year" title="下一年"></i>
+      <i class="btn-control next-month" title="下一月"></i>
+    </div>
+    <div class="grid" tabindex="0">
+      <ul class="weekdays">
+        <li>周日</li>
+        <li>周一</li>
+        <li>周二</li>
+        <li>周三</li>
+        <li>周四</li>
+        <li>周五</li>
+        <li>周六</li>
+      </ul>
+      <ul class="days"></ul>
+    </div>
+  </div>
+</div>
+<script src="./jquery.datepicker.js"></script>
+<script>
+  $(function () {
+    var datePicker = new DatePicker({})
+    datePicker.showCalendar()
+  })
+
+</script>
+</body>
+
+</html>
