@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>自制表情包</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    canvas {
+      display: block;
+      margin: auto;
+    }
+    table {
+      border: 1px dashed #ccc;
+      margin: 50px auto;
+    }
+    table th {
+      padding: 5px 10px;
+      text-align: right;
+      white-space: nowrap;
+    }
+    table td {
+      padding: 5px;
+      box-sizing: border-box;
+    }
+    input, select {
+      padding: 2px 5px;
+      outline: 0;
+      width: 150px;
+    }
+    input[type=range] {
+      padding: 0;
+      width: 100%;
+    }
+    input[type=number] {
+      width: 60px;
+    }
+    #input-file {
+      display: none;
+    }
+    .button {
+      display: inline-block;
+      margin-right: 10px;
+      width: 80px;
+      height: 30px;
+      line-height: 30px;
+      cursor: pointer;
+      text-align: center;
+      font-size: 14px;
+      border-style: solid;
+      border-width: 0 2px 2px 0;
+      box-sizing: content-box;
+      outline: 0;
+      user-select: none;
+    }
+    .button:active {
+      border-width: 2px 0 0 2px;
+    }
+    .button.primary {
+      background-color: #7dc9ff;
+      border-color: #5aacff;
+      color: #fff;
+    }
+    .button.primary:hover {
+      background-color: #6ab9ff;
+    }
+    .button.success {
+      background-color: #28e97e;
+      border-color: #28be56;
+      color: #fff;
+    }
+    .button.success:hover {
+      background-color: #21cd74;
+    }
+    #word-color {
+      padding: 0;
+      width: 20px;
+    }
+
+  </style>
+</head>
+
+<body>
+
+<table>
+  <tr>
+    <th><label for="image-width">宽度：</label></th>
+    <td><input type="number" id="image-width"></td>
+    <th><label for="image-height">高度：</label></th>
+    <td><input type="number" id="image-height"></td>
+    <th><label for="ratio-lock">锁定宽高比：</label></th>
+    <td><input type="checkbox" id="ratio-lock"></td>
+    <th></th>
+    <td></td>
+    <th></th>
+    <td></td>
+  </tr>
+  <tr>
+    <th><label for="input-word">文字：</label></th>
+    <td><input type="text" id="input-word"></td>
+    <th><label for="font-size">字体大小：</label></th>
+    <td><input type="number" id="font-size"></td>
+    <th><label for="font-family">字体：</label></th>
+    <td>
+      <select id="font-family">
+        <option value="SimHei">黑体</option>
+        <option value="SimKai">楷体</option>
+        <option value="SimSun">宋体</option>
+        <option value="NSimSun">新宋体</option>
+        <option value="Microsoft YaHei">微软雅黑</option>
+        <option value="Microsoft JhengHei">微软正黑</option>
+        <option value="MingLiU">微软新细明</option>
+        <option value="Consolas">Consolas</option>
+        <option value="Tahoma">Tahoma</option>
+        <option value="Arial Narrow">Arial Narrow</option>
+        <option value="Browallia New">Browallia New</option>
+        <option value="Century Gothic">Century Gothic</option>
+        <option value="Comic Sans MS">Comic Sans MS</option>
+        <option value="Lucida Console">Lucida Console</option>
+        <option value="Gautami">Gautami</option>
+        <option value="Corbel">Corbel</option>
+        <option value="Courier">Courier</option>
+        <option value="Courier New">Courier New</option>
+      </select>
+      <input type="color" id="word-color" title="选择字体颜色" value="#aaaaaa">
+    </td>
+    <th><label for="word-top">距离顶端：</label></th>
+    <td><input type="number" id="word-top"></td>
+    <th><label for="word-left">距离左边：</label></th>
+    <td><input type="number" id="word-left"></td>
+  </tr>
+  <tr>
+  </tr>
+  <tr>
+    <th><label for="range-quality">质量：</label></th>
+    <td colspan="3"><input type="range" min="0.0" max="1.0" step="0.001" id="range-quality"></td>
+    <th><label for="range-g-offset">g通道偏移量：</label></th>
+    <td colspan="3"><input type="range" min="0" max="255" step="1" id="range-g-offset"></td>
+    <th></th>
+    <td></td>
+  </tr>
+  <tr>
+    <td colspan="10" style="text-align: center;">
+      <label id="file-selector" class="button primary">
+        选择文件
+        <input type="file" id="input-file">
+      </label>
+    </td>
+  </tr>
+</table>
+
+<canvas id="canvas"></canvas>
+<script>
+
+  var inputCanvasWidth = document.getElementById('image-width')
+  var inputCanvasHeight = document.getElementById('image-height')
+  var checkboxLock = document.getElementById('ratio-lock')
+  var inputWord = document.getElementById('input-word')
+  var selectFontFamily = document.getElementById('font-family')
+  var inputFontSize = document.getElementById('font-size')
+  var rangeQuality = document.getElementById('range-quality')
+  var rangeGOffset = document.getElementById('range-g-offset')
+  var inputWordLeft = document.getElementById('word-left')
+  var inputWordTop = document.getElementById('word-top')
+  var inputWordColor = document.getElementById('word-color')
+
+  var offScreenCanvas = document.createElement('canvas')
+  var offScreenContext = offScreenCanvas.getContext('2d')
+  var canvas = document.getElementById('canvas')
+  var fileEle = document.getElementById('input-file')
+  var context = canvas.getContext('2d')
+  var imgWidth, imgHeight
+  var cvsWidth, cvsHeight
+  var originImage, originImageRatio, originImageData, originImageDataContent
+  var imageData, imageDataContent
+
+  var word = {
+    label: '<输入文字>',
+    left: 0,
+    top: 0
+  }
+  var fontSize = 15
+  var gOffset = 50
+  var isBold = true
+  var fontFamily = 'SimSun'
+  var fontColor = '#aaaaaa'
+  var quality = 0.05
+
+  function init () {
+
+    checkboxLock.checked = true
+    inputWord.value = word.label
+    inputFontSize.value = fontSize
+    selectFontFamily.value = fontFamily
+    rangeQuality.value = quality
+    rangeGOffset.value = gOffset
+
+    fileEle.onchange = function () {
+
+      var file = this.files[0]
+
+      var reader = new FileReader()
+      reader.onload = function (e) {
+        originImage = new Image()
+        originImage.onload = function () {
+
+          imgWidth = originImage.width
+          imgHeight = originImage.height
+          originImageRatio = imgWidth / imgHeight
+          console.log('originImageRatio:', originImageRatio)
+          cvsWidth = imgWidth
+          cvsHeight = imgHeight
+          word.left = Math.floor((cvsWidth - offScreenContext.measureText(word.label).width) / 2)
+          word.top = Math.floor(cvsHeight - fontSize)
+          inputWordLeft.value = word.left
+          inputWordTop.value = word.top
+          render()
+        }
+        originImage.src = e.target.result
+      }
+      reader.readAsDataURL(file)
+    }
+
+    rangeQuality.onchange = function (e) {
+      quality = parseFloat(rangeQuality.value)
+      console.log('quality:', quality)
+      originImage && render()
+    }
+
+    rangeGOffset.onchange = function (e) {
+      gOffset = parseFloat(rangeGOffset.value)
+      console.log('gOffset:', gOffset)
+      originImage && render()
+    }
+
+    inputCanvasWidth.onblur = inputCanvasWidth.onkeydown = function (e) {
+      if (!originImage) return false
+      if ((e.type === 'blur' || (e.type === 'keydown' && e.keyCode === 13)) && cvsWidth !== parseInt(inputCanvasWidth.value)) {
+        cvsWidth = parseInt(inputCanvasWidth.value)
+        inputCanvasWidth.value = cvsWidth
+        if (checkboxLock.checked) {
+          cvsHeight = Math.floor(cvsWidth / originImageRatio)
+          inputCanvasHeight.value = cvsHeight
+        }
+        render()
+      }
+    }
+
+    inputCanvasHeight.onblur = inputCanvasHeight.onkeydown = function (e) {
+      if (!originImage) return false
+      if ((e.type === 'blur' || (e.type === 'keydown' && e.keyCode === 13)) && cvsHeight !== parseInt(inputCanvasHeight.value)) {
+        cvsHeight = parseInt(inputCanvasHeight.value)
+        inputCanvasHeight.value = cvsHeight
+        if (checkboxLock.checked) {
+          cvsWidth = Math.floor(cvsHeight * originImageRatio)
+          inputCanvasWidth.value = cvsWidth
+        }
+        render()
+      }
+    }
+
+    inputWord.onblur = inputWord.onkeydown = function (e) {
+      if (!originImage) return false
+      if ((e.type === 'blur' || (e.type === 'keydown' && e.keyCode === 13)) && word.label !== inputWord.value) {
+        word.label = inputWord.value
+        render()
+      }
+    }
+
+    inputFontSize.onblur = inputFontSize.onkeydown = function (e) {
+      if (!originImage) return false
+      if ((e.type === 'blur' || (e.type === 'keydown' && e.keyCode === 13)) && fontSize !== parseInt(inputFontSize.value)) {
+        fontSize = parseInt(inputFontSize.value)
+        inputFontSize.value = fontSize
+        render()
+      }
+    }
+
+    inputWordLeft.onblur = inputWordLeft.onkeydown = function (e) {
+      if (!originImage) return false
+      if ((e.type === 'blur' || (e.type === 'keydown' && e.keyCode === 13)) && word.left !== parseInt(inputWordLeft.value)) {
+        word.left = parseInt(inputWordLeft.value)
+        inputWordLeft.value = word.left
+        render()
+      }
+    }
+
+    inputWordTop.onblur = inputWordTop.onkeydown = function (e) {
+      if (!originImage) return false
+      if ((e.type === 'blur' || (e.type === 'keydown' && e.keyCode === 13)) && word.top !== parseInt(inputWordTop.value)) {
+        word.top = parseInt(inputWordTop.value)
+        inputWordTop.value = word.top
+        render()
+      }
+    }
+
+    selectFontFamily.onchange = function (e) {
+      fontFamily = selectFontFamily.value
+      originImage && render()
+    }
+
+    inputWordColor.onchange = function (e) {
+      fontColor = inputWordColor.value
+      originImage && render()
+    }
+
+  }
+
+  var x, y, pos, r, g, b
+
+  function render () {
+    inputCanvasWidth.value = cvsWidth
+    inputCanvasHeight.value = cvsHeight
+    canvas.width = offScreenCanvas.width = cvsWidth
+    canvas.height = offScreenCanvas.height = cvsHeight
+    offScreenContext.fillStyle = '#ffffff'
+    offScreenContext.fillRect(0, 0, cvsWidth, cvsHeight)
+    offScreenContext.drawImage(originImage, 0, 0, cvsWidth, cvsHeight)
+    offScreenContext.fillStyle = fontColor
+    offScreenContext.font = 'normal ' + (isBold ? 'bold ' : '') + fontSize + 'px ' + fontFamily
+    offScreenContext.textBaseline = 'top'
+    offScreenContext.fillText(word.label, word.left, word.top)
+    originImageData = offScreenContext.getImageData(0, 0, cvsWidth, cvsHeight)
+    originImageDataContent = originImageData.data
+    var img = new Image()
+    img.onload = function () {
+      offScreenContext.drawImage(img, 0, 0, cvsWidth, cvsHeight)
+      imageData = offScreenContext.getImageData(0, 0, cvsWidth, cvsHeight)
+      imageDataContent = imageData.data
+      for (y = 0; y < cvsHeight; y++) {
+        for (x = 0; x < cvsWidth; x++) {
+          pos = y * cvsWidth + x
+          r = imageDataContent[pos * 4]
+          g = imageDataContent[pos * 4 + 1]
+          b = imageDataContent[pos * 4 + 2]
+          imageDataContent[pos * 4] = r - gOffset / 2 < 0 ? 0 : r - gOffset / 2
+          imageDataContent[pos * 4 + 1] = g + gOffset > 255 ? 255 : g + gOffset
+          imageDataContent[pos * 4 + 2] = b - gOffset / 2 < 0 ? 0 : b - gOffset / 2
+          imageDataContent[pos * 4 + 3] = originImageDataContent[pos * 4 + 3]
+        }
+      }
+      offScreenContext.putImageData(imageData, 0, 0)
+      context.drawImage(offScreenCanvas, 0, 0, cvsWidth, cvsHeight)
+    }
+    img.src = offScreenCanvas.toDataURL('image/jpeg', quality)
+  }
+
+  init()
+
+</script>
+
+</body>
+
+</html>
